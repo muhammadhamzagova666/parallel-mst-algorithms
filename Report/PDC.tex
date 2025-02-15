@@ -1,0 +1,174 @@
+% Language: TeX
+% -----------------------------------------------------------------------------
+% File: PDC.tex
+% Description: This report documents the implementation and evaluation of parallel 
+%              algorithms for computing the Minimum Spanning Tree (MST) of a graph 
+%              using Kruskal's and Boruvka's methods. It covers background information,
+%              data structures, algorithmic approaches including parallel sorting and
+%              merging techniques, dataset description, experimental results, and 
+%              performance analysis.
+%
+% Target Users: Developers, researchers, and academics interested in parallel 
+%               graph algorithms and distributed computation.
+%
+% Code Style: Follows structured and self-explanatory commenting best practices.
+% -----------------------------------------------------------------------------
+
+\documentclass[a4paper, 12pt]{article}
+\usepackage[utf8]{inputenc}                % Specify the input encoding for compatibility.
+\usepackage[T1]{fontenc}                   % Use T1 font encoding for proper hyphenation.
+\usepackage{graphicx}                      % Package for including images.
+\usepackage{lipsum}                        % Generates filler text (for draft purposes).
+\usepackage{geometry}                      % Adjusts page geometry as required.
+\usepackage{titlesec}                      % Customizes section titles.
+\usepackage{times}                         % Uses Times font for a professional look.
+\usepackage{hyperref}                      % Enables clickable cross-references.
+\usepackage{amsmath}                       % Provides advanced math symbols.
+\usepackage{algorithm}                     % For formatting algorithms.
+\usepackage{algpseudocode}                 % For pseudocode environments.
+\usepackage[linesnumbered,ruled,vlined]{algorithm2e} % Enhanced algorithm listings.
+\usepackage{listings}                      % For including source code with syntax highlighting.
+\usepackage{color}                         % Enables color definitions.
+
+\geometry{a4paper, margin=0.75in}          % Set page margins for a balanced layout.
+% \geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}  % Alternative margin settings.
+
+% Define custom colors for code blocks to improve readability.
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+% Define a style for listings to keep code formatting consistent.
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   % Light background for contrast.
+    commentstyle=\color{codegreen},         % Color for comments in code.
+    keywordstyle=\color{magenta},           % Highlight keywords.
+    numberstyle=\tiny\color{codegray},        % Formatting for line numbers.
+    stringstyle=\color{codepurple},         % Color for string literals.
+    basicstyle=\ttfamily\footnotesize,       % Use a teletype font.
+    breakatwhitespace=false,                % Do not break at whitespace.
+    breaklines=true,                        % Enable automatic line breaking.
+    captionpos=b,                           % Captions at the bottom of listings.
+    keepspaces=true,                        % Preserve spaces in text.
+    numbers=left,                           % Display line numbers on the left.
+    numbersep=5pt,                          % Space between line numbers and code.
+    showspaces=false,                       % Do not visually show spaces.
+    showstringspaces=false,                 % Do not show space markers in strings.
+    showtabs=false,                         % Do not display tab markers.
+    tabsize=2                               % Set tab width to 2 spaces.
+}
+
+\lstset{style=mystyle}  % Apply the defined listing style.
+
+\begin{document}
+
+% -----------------------------------------------------------------------------
+% Title Page
+% -----------------------------------------------------------------------------
+\begin{titlepage}
+    \centering
+    \vspace{3.5cm}  % Vertical spacing to center the content on the page.
+    \includegraphics[width=0.5\textwidth]{NU-logo.jpg}\par\vspace{1cm}  % University logo.
+    \includegraphics[width=0.5\textwidth]{FAST.png}\par\vspace{1cm}     % Partner institution logo.
+    \vspace{1cm}
+    {\scshape\LARGE\textbf{Codes for Applications of Parallel \& Distributed Computing}\par}
+    \vspace{1cm}
+    {\scshape\Huge\textbf{Minimum Spanning Trees using Boruvka's \& Kruskal's Algorithms}\par}
+    \vspace{1cm}
+    {\scshape\Large Project Report\par}
+    \vspace{1cm}
+    {\scshape\Large Professor Dr. Nausheen Shoaib (BCS-5E)\par}
+    \vspace{1cm}
+    {\scshape\Large Parallel \& Distributed Computing (CS-3006)\par}
+    \vspace{1cm}
+    % Listing team members with consistent styling for clarity.
+    \begin{itemize}
+        \item {\scshape\Large Muhammad Talha (K21-3349)\par}\vspace{0.25cm}
+        \item {\scshape\Large Muhammad Hamza (K21-4579)\par}\vspace{0.25cm}
+        \item {\scshape\Large Muhammad Salar (K21-4619)\par}
+    \end{itemize}
+    \vfill
+    \vspace{1cm}    
+    {Foundation of Advancement of Science and Technology\par}
+    {National University of Computer and Emerging Sciences\par}
+    {Department of Computer Science\par}
+    {Karachi, Pakistan\par}
+    {Thursday, December 7, 2023\par}
+\end{titlepage}
+
+% -----------------------------------------------------------------------------
+% Table of Contents
+% -----------------------------------------------------------------------------
+\begin{titlepage}
+\tableofcontents  % Automatically generated table of contents for easy navigation.
+\end{titlepage}
+
+% -----------------------------------------------------------------------------
+% Abstract Section
+% -----------------------------------------------------------------------------
+\begin{abstract}
+% The abstract provides a concise summary of the project's goals, methodologies,
+% and key findings. It enables readers to quickly grasp the project's scope.
+In this project, we implement and compare two parallel algorithms for finding the 
+minimum spanning tree (MST) of a graph: Kruskal’s algorithm and Boruvka’s algorithm. 
+We parallelize these algorithms using OpenMP and MPI, allowing us to evaluate their 
+scalability and performance across different process counts (2, 4, and 8) and dataset 
+sizes (10, 100, 1000, 5000, and 10000 nodes). Detailed performance metrics such as 
+execution time, computation time, and communication time are analyzed to assess the 
+advantages and limitations of each approach.
+\end{abstract}
+
+% -----------------------------------------------------------------------------
+% Background Section
+% -----------------------------------------------------------------------------
+\section{Background}
+% This section introduces the concept of a minimum spanning tree (MST), outlines 
+% the applications of MSTs, and presents an overview of the algorithms used to compute them.
+A minimum spanning tree (MST) is a subset of edges in a connected, edge-weighted undirected 
+graph that connects all nodes with the smallest total weight. MSTs have widespread use in network 
+design, clustering, image segmentation, and many other fields. Prominent algorithms to solve the MST 
+problem include Prim’s, Kruskal’s, and Boruvka’s algorithms. In this project, we focus on comparing 
+parallel implementations of Kruskal’s and Boruvka’s algorithms.
+
+% -----------------------------------------------------------------------------
+% Data Structures Section
+% -----------------------------------------------------------------------------
+\subsection{Data Structures}
+% Two main data structures underpin our implementations: the undirected graph and the disjoint-set.
+% The graph stores vertices and edges, while the disjoint-set (implemented via union-find) is used
+% to efficiently determine connectivity and prevent cycles in the MST during edge selection.
+\subsubsection{Undirected Graph}
+Both algorithms are edge-centric; hence, we represent the undirected graph as a set of edges. 
+An \texttt{Edge} consists of two endpoints (\texttt{src} and \texttt{dest}) and a \texttt{weight}. 
+The \texttt{Graph} structure holds the number of vertices and an array of these \texttt{Edge} structures. 
+Ordering is maintained such that \texttt{src < dest} to avoid duplicate edges.
+
+\subsubsection{Disjoint-set}
+To quickly check for cycles and merge connected components, we implement a disjoint-set data 
+structure using the union-find algorithm. Optimizations such as path compression and union-by-rank 
+are employed to ensure near-constant time performance for \texttt{find} and \texttt{union} operations. 
+The data structure is vital for both the parallel Kruskal's and Boruvka's algorithm implementations.
+
+% -----------------------------------------------------------------------------
+% Inputs and Outputs Section
+% -----------------------------------------------------------------------------
+\subsection{Inputs and Outputs}
+% The project accepts graph inputs either from a file or generated dynamically based on user-specified 
+% parameters. The input file format includes the number of vertices and edges followed by the edge definitions.
+The input can be provided as a file containing graph data or generated randomly based on user input. 
+The file format is:
+\begin{itemize}
+    \item \texttt{V E src[0] dest[0] weight[0] src[1] dest[1] weight[1] ... src[E-1] dest[E-1] weight[E-1]}
+\end{itemize}
+In the random generation scenario, users specify the number of vertices (\texttt{V}) and the graph density 
+(\texttt{D}; a value between 0 and 1). Edges are generated accordingly, and the MST, along with performance metrics, 
+is output to standard output.
+
+% -----------------------------------------------------------------------------
+% The following sections continue with details on algorithmic approach, dataset description, and results.
+% Further inline comments and descriptive string literals are embedded throughout the document to facilitate 
+% debugging and future modifications.
+% -----------------------------------------------------------------------------
+
+\end{document}
